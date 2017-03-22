@@ -10,8 +10,11 @@ import tensorflow as tf
 
 class WordEmbedder():
     
-    def __init__(self, embed_dim):
-        self.embed_dim = embed_dim
+    def __init__(self, batch_size, embedding_size, skip_window, num_skips):
+        self.batch_size = batch_size
+        self.embedding_size = embedding_size
+        self.skip_window = skip_window
+        self.num_skips = num_skips        
         
         
     def build_graph(self):
@@ -19,31 +22,28 @@ class WordEmbedder():
         
         #the batch size variable needs to be elsewhereFIXTHIS
         self.valid_size = 16     # Random set of words to evaluate similarity on.
-        valid_window = 50  # Only pick dev samples in the head of the distribution.
+        valid_window = 64  # Only pick dev samples in the head of the distribution.
         self.valid_examples = np.random.choice(valid_window, self.valid_size, replace=False)
         num_sampled = 64         
-        batch_size = 128
-        embedding_size = 128  # Dimension of the embedding vector.
-        skip_window = 1       # How many words to consider left and right.
-        num_skips = 2 
+        
         self.graph = tf.Graph()
         with self.graph.as_default():
             
             # Input data.
-            self.train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
-            self.train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1])
+            self.train_inputs = tf.placeholder(tf.int32, shape=[self.batch_size])
+            self.train_labels = tf.placeholder(tf.int32, shape=[self.batch_size, 1])
             valid_dataset = tf.constant(self.valid_examples, dtype=tf.int32)
             
             # Ops and variables pinned to the CPU because of missing GPU implementation
             with tf.device('/cpu:0'):
                 embeddings = tf.Variable(
-                        tf.random_uniform([self.vocabulary_size, embedding_size], -1.0, 1.0)) 
+                        tf.random_uniform([self.vocabulary_size, self.embedding_size], -1.0, 1.0)) 
                 embed = tf.nn.embedding_lookup(embeddings, self.train_inputs)
                 
                 # Construct the variables for the NCE loss
                 nce_weights = tf.Variable(
-                        tf.truncated_normal([self.vocabulary_size, embedding_size],
-                                            stddev=1.0 / math.sqrt(embedding_size)))  
+                        tf.truncated_normal([self.vocabulary_size, self.embedding_size],
+                                            stddev=1.0 / math.sqrt(self.embedding_size)))  
                 nce_biases = tf.Variable(tf.zeros([self.vocabulary_size]))
                 
             # Compute the average NCE loss for the batch.
@@ -109,23 +109,25 @@ class WordEmbedder():
         self.vocabulary_size = len(token_reps)
         self.counts = collections.Counter(token_strings).most_common(self.vocabulary_size - 1)
         self.reverse_token_reps = dict(zip(token_reps.values(), token_reps.keys())) 
+        self.token_reps = token_reps
         self.tokens = tokens
+        print ('LENGTH', len(tokens))
         #return tokens, self.counts, token_reps, reverse_token_reps
     
     
-    def generate_batch(self, batch_size, num_skips, skip_window, tokens):
+    def generate_batch(self, num_skips, skip_window, tokens):
         #Function to generate a training batch for the skip-gram model.
         
-        assert batch_size % num_skips == 0
+        assert self.batch_size % num_skips == 0
         assert num_skips <= 2 * skip_window
-        batch = np.ndarray(shape=(batch_size), dtype=np.int32)
-        labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
+        batch = np.ndarray(shape=(self.batch_size), dtype=np.int32)
+        labels = np.ndarray(shape=(self.batch_size, 1), dtype=np.int32)
         span = 2 * skip_window + 1  # [ skip_window target skip_window ]
         buffer = collections.deque(maxlen=span)
         for _ in range(span):
             buffer.append(tokens[self.token_index])
             self.token_index = (self.token_index + 1) % len(tokens)
-        for i in range(batch_size // num_skips):
+        for i in range(self.batch_size // num_skips):
             target = skip_window  # target label at the center of the buffer
             targets_to_avoid = [skip_window]
             for j in range(num_skips):
@@ -141,16 +143,10 @@ class WordEmbedder():
         return batch, labels    
     
     
-    def train_graph(self):
+    def train_graph(self, num_steps):
         #trains graph to produce token embeddings
-        
-        #these variables below could be better managed
-        batch_size = 128
-        embedding_size = 128  # Dimension of the embedding vector.
-        skip_window = 1       # How many words to consider left and right.
-        num_skips = 2        
-        self.num_steps = 100001
-        
+                  
+        self.num_steps = num_steps
         
         with tf.Session(graph=self.graph) as session:
             
@@ -162,7 +158,7 @@ class WordEmbedder():
             average_loss = 0
             for step in xrange(self.num_steps):
                 batch_inputs, batch_labels = self.generate_batch(
-                        batch_size, num_skips, skip_window, self.tokens)  
+                        self.num_skips, self.skip_window, self.tokens)  
                 feed_dict = {self.train_inputs: batch_inputs, self.train_labels: batch_labels}
                 
                 # We perform one update step by evaluating the optimizer op (including it
@@ -193,16 +189,19 @@ class WordEmbedder():
                         print(log_str)
                         
             final_embeddings = self.normalized_embeddings.eval()
+            print final_embeddings
             return final_embeddings
             
     
-    def generate_embedded_samples(self, text):
+    def generate_embeddings(self, text):
         tokenized_text = self.tokenize_text(text)
         #print tokenized_text
         self.clean_tokens(tokenized_text)
         self.token_index = 0
         self.build_graph()
-        final_embedding = self.train_graph()
+        final_embeddings = self.train_graph(10001)
+        print final_embeddings[0]
+        return final_embeddings
         #for i in range(0, 10):
         #    batch, labels = self.generate_batch(batch_size=128, num_skips=2, skip_window=1, tokens=cleaned_tokens)
         #    print('BATCH', batch)
