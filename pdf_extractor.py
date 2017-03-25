@@ -9,6 +9,8 @@ class PDFExtractor():
     def read_pdf(self, filename):
         pdfFileObj = open(filename, 'rb')
         pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
+        if pdfReader.isEncrypted:
+            pdfReader.decrypt('')        
         return pdfReader
     
     def concat_pages(self, pdfReader, pageRange):

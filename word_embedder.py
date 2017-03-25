@@ -22,9 +22,9 @@ class WordEmbedder():
         
         #the batch size variable needs to be elsewhereFIXTHIS
         self.valid_size = 16     # Random set of words to evaluate similarity on.
-        valid_window = 64  # Only pick dev samples in the head of the distribution.
+        valid_window = 32  # Only pick dev samples in the head of the distribution.
         self.valid_examples = np.random.choice(valid_window, self.valid_size, replace=False)
-        num_sampled = 64         
+        num_sampled = 32         
         
         self.graph = tf.Graph()
         with self.graph.as_default():
