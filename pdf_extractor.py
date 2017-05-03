@@ -23,7 +23,7 @@ class PDFExtractor():
     def extract_text(self, filename):
         pdfReader = self.read_pdf(filename)
         #edited for 10 pgs
-        text = self.concat_pages(pdfReader, [1, 5])
+        text = self.concat_pages(pdfReader, [0, pdfReader.getNumPages()])
         text = text.encode('utf8')
         tbl = string.maketrans('', '')
         text = text.translate(tbl, string.punctuation)

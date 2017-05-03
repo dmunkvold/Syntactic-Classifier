@@ -2,6 +2,7 @@ from pdf_extractor import PDFExtractor
 from word_embedder import WordEmbedder
 from image_generator import ImageGenerator
 from PIL import Image
+import random
 import numpy
 import glob
 
@@ -18,8 +19,8 @@ class SampleBuilder():
         
     def generate_samples_from_pdf(self, pdf, category):
         pdf_extractor = PDFExtractor()
-        folder = r'./lib/samples/' + category
-        word_embedder = WordEmbedder(32, 64, 2, 1)            
+        folder = r'./lib/samples/' + category + '-eval'
+        word_embedder = WordEmbedder(32, 64, 3, 1)            
         text = pdf_extractor.extract_text(pdf)
         tag = pdf[-8:-4]
         self.embeddings = word_embedder.generate_embeddings(text)
@@ -29,7 +30,7 @@ class SampleBuilder():
     #The two functions below are no longer up to date
     def convert_pdfs(self):
         for i in self.categories:
-            folder = './lib/pdfs/' + i
+            folder = './lib/pdfs/' + i + '-eval'
             for filename in glob.glob(folder + '/*.pdf'): 
                 print filename
                 self.generate_samples_from_pdf(filename, i)
@@ -40,7 +41,7 @@ class SampleBuilder():
     
     def fetch_from_folder(self, category):
         image_list = []
-        for filename in glob.glob('./lib/' + category + '/*.png'): 
+        for filename in glob.glob('./lib/' + category + '4/*.png'): 
             im=Image.open(filename)
             image_list.append(im)        
     
@@ -51,13 +52,13 @@ class SampleBuilder():
     
     def generate_samples(self, sample_length, folder, tag, tokens):
         height = sample_length
-        print self.embeddings
         for i in range(0, len(tokens)/height):
             pixel_data = []
             for j in range(0, height):
                 pixel_data.append(self.embeddings[tokens[(i*height)+j]])
-            numpy.savetxt(folder + '/' + tag+str(i), pixel_data)
             #norm = self.normalize(pixel_data)
+            numpy.savetxt(folder + '/' + tag+str(i), pixel_data)
+            
             #potential to speed up process of pixel data to training set by avoiding saving it as image. Right
             # now I am going to save as txt and then grab the data from the txt 
             
@@ -75,29 +76,55 @@ class SampleBuilder():
                     
         print "after", norm_pd
         return norm_pd  
-    
+    #editing this for 16 instead of 32 size 
     def load_dataset_from_disk(self):
         samples = []
-        for i in range(0, len(self.categories)-1):
-            folder = './lib/samples/' + self.categories[i]
-            for filename in glob.glob(folder): 
-                sample = numpy.loadtxt(filename)
-                sample.append(sample, i)
+        for i in range(0, len(self.categories)):
+            folder = './lib/samples/' + self.categories[i] + '-eval/'
+            for filename in glob.glob(folder + '*'): 
+                sample = numpy.loadtxt(filename, dtype=numpy.float32)
+                sam = numpy.split(sample, 2)
+                samples.append((sam[0], i))
+                samples.append((sam[1], i))
         shuffled_samples = self.scramble_samples(samples)
         data, labels = self.format_samples(shuffled_samples)
+        return data, labels
         
                 
     def scramble_samples(self, samples):
-        #import random
-        samples = random.shuffle(samples)
+        shuffled_samples = random.sample(samples, len(samples))
+        return shuffled_samples
+        
         
     def format_samples(self, shuffled_samples):
         data = []
         labels = []
-        for i in shuffled_samples:
-            data.append(i[0])
-            labels.append(i[1])    
-    
+        for i in range(0, len(shuffled_samples)):
+            data.append(shuffled_samples[i][0])
+            labels.append(shuffled_samples[i][1])
+        return data, labels
+    #editing for 16 size
+    def extract_samples_from_pdf(self, filepath, category):
+        pdf_extractor = PDFExtractor()
+        word_embedder = WordEmbedder(16, 64, 4, 1)   
+        text = pdf_extractor.extract_text(filepath)
+        embeddings = word_embedder.generate_embeddings(text)
+        height = 16
+        samples=[]
+        for i in range(0, len(word_embedder.tokens)/height):
+            pixel_data = []
+            for j in range(0, height):
+                pixel_data.append(embeddings[word_embedder.tokens[(i*height)+j]])
+            #just saying 0 for now
+            sample=(pixel_data, self.categories.index(category))
+            samples.append(sample)
+        #print samples
+        data,labels = self.format_samples(samples)
+        return data, labels
+        
+                           
+        
+        
     
         
             

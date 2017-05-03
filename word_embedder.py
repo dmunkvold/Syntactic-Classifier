@@ -6,6 +6,7 @@ import collections
 import numpy as np
 import random
 import tensorflow as tf
+from itertools import compress
 #from PIL import Image
 
 class WordEmbedder():
@@ -30,6 +31,7 @@ class WordEmbedder():
         with self.graph.as_default():
             
             # Input data.
+            
             self.train_inputs = tf.placeholder(tf.int32, shape=[self.batch_size])
             self.train_labels = tf.placeholder(tf.int32, shape=[self.batch_size, 1])
             valid_dataset = tf.constant(self.valid_examples, dtype=tf.int32)
@@ -70,8 +72,8 @@ class WordEmbedder():
             
             # Add variable initializer.
             init = tf.global_variables_initializer()
-            
-            
+
+        
     def tokenize_text(self, text):
         #extract syntactic components of words
         
@@ -111,10 +113,9 @@ class WordEmbedder():
         self.reverse_token_reps = dict(zip(token_reps.values(), token_reps.keys())) 
         self.token_reps = token_reps
         self.tokens = tokens
-        print ('LENGTH', len(tokens))
         #return tokens, self.counts, token_reps, reverse_token_reps
     
-    
+    #skip-gram
     def generate_batch(self, num_skips, skip_window, tokens):
         #Function to generate a training batch for the skip-gram model.
         
@@ -157,6 +158,7 @@ class WordEmbedder():
             
             average_loss = 0
             for step in xrange(self.num_steps):
+		#for cbow rn
                 batch_inputs, batch_labels = self.generate_batch(
                         self.num_skips, self.skip_window, self.tokens)  
                 feed_dict = {self.train_inputs: batch_inputs, self.train_labels: batch_labels}
@@ -191,7 +193,7 @@ class WordEmbedder():
             final_embeddings = self.normalized_embeddings.eval()
             print final_embeddings
             return final_embeddings
-            
+
     
     def generate_embeddings(self, text):
         tokenized_text = self.tokenize_text(text)
