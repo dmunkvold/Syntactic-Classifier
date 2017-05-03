@@ -34,9 +34,7 @@ class SampleBuilder():
             for filename in glob.glob(folder + '/*.pdf'): 
                 print filename
                 self.generate_samples_from_pdf(filename, i)
-        #for j in pdfs.keys():
-        #    assert j in self.categories
-        #    self.generate_samples_from_pdfs(pdfs[j], j)
+
     
     
     def fetch_from_folder(self, category):
@@ -45,9 +43,6 @@ class SampleBuilder():
             im=Image.open(filename)
             image_list.append(im)        
     
-    #def generate_set(self):
-    #    samples = [] # first as (sample, label) tuples
-    #    for j in self.categories:
     
     
     def generate_samples(self, sample_length, folder, tag, tokens):

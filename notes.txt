@@ -1,3 +1,0 @@
-Concerns:
-
-~ Not sure if generated embeddings actually lines up with tokens in token_reps dictionary. Need to investigate before moving on.

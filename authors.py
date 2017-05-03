@@ -54,39 +54,11 @@ def cnn_model_fn(features, labels, mode):
     #input tensor shape: [batch_size, 32, 64, 40]
 
     
-    #pool1 = tf.layers.max_pooling2d(inputs=tf.add(tf.add(conv1, conv2), tf.add(conv2, conv4)), pool_size=[32, 64], strides=1)
     pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[16, 64], strides=2)
     pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[16, 64], strides=2)
     pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[16, 64], strides=2)
-    #pool4 = tf.layers.max_pooling2d(inputs=conv4, pool_size=[16, 64], strides=1)
-    #pool5 = tf.layers.max_pooling2d(inputs=[pool1 + pool2 + pool3 + pool4], pool_size=[16, 64], strides=1) 
-    #For now, 4/23/17, I will use only one conv and pooling layer
-    # Convolutional Layer #2 and Pooling Layer #2
-    """
-    conv4 = tf.layers.conv2d(
-      inputs = pool1,
-      filters = 20,
-      kernel_size = [2, 32],
-      padding = "same",
-      activation = tf.nn.relu) 
     
-    conv5 = tf.layers.conv2d(
-          inputs = pool2,
-          filters = 20,
-          kernel_size = [2, 32],
-          padding = "same",
-          activation = tf.nn.relu)    
-    conv6 = tf.layers.conv2d(
-          inputs = pool3,
-          filters = 20,
-          kernel_size = [2, 32],
-          padding = "same",
-          activation = tf.nn.relu)    
-          
-    pool4 = tf.layers.max_pooling2d(inputs=conv4, pool_size=[2, 2], strides=2)
-    pool5 = tf.layers.max_pooling2d(inputs=conv5, pool_size=[2, 2], strides=2)
-    pool6 = tf.layers.max_pooling2d(inputs=conv6, pool_size=[2, 2], strides=2)
-    """
+    # Convolutional Layer #2 and Pooling Layer #2
     # Dense Layer
     pool1_flat = tf.reshape(pool1, [-1, 1 * 1 * 20])
     pool2_flat = tf.reshape(pool2, [-1, 1 * 1 * 20])
@@ -185,6 +157,5 @@ if __name__ == "__main__":
     tf.app.run() 
     
 
-#originally, all that is in evaluate was in main, and there was no session or graph
-#92 WORKEDDDDDDDD
+
     

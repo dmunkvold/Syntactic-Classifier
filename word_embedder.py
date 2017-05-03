@@ -204,12 +204,3 @@ class WordEmbedder():
         final_embeddings = self.train_graph(10001)
         print final_embeddings[0]
         return final_embeddings
-        #for i in range(0, 10):
-        #    batch, labels = self.generate_batch(batch_size=128, num_skips=2, skip_window=1, tokens=cleaned_tokens)
-        #    print('BATCH', batch)
-        #    print("LABLES", labels)
-        #target_context = self.contextualize(cleaned_tokens)
-        #print 'cleaned2', cleaned_tokens
-        #token_chunks = self.chunker(cleaned_tokens)
-        #samples, img_samples = self.build_samples(token_chunks, target_context)
-        #return samples, img_samples
